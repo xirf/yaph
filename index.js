@@ -9,20 +9,18 @@ const readline = require("readline");
 let args = process.argv.slice(2);
 
 if (args.length < 1 || args.indexOf("-h") > 0 || args.indexOf("--help") > 0) {
-	console.log(`
-Usage   :  ypdl <url> [options]
-Options :   
-    -t <number>     Number of threads to use (default: 5).
-    -h              Show this help message.
-    -f  <filter>    Filter file to download (default: audioandvideo)
-                    Available filters: audioandvideo, video, videoonly, 
-                    audio, audioonly.
-    -q <quality>    Set the quality of the downloaded file 
-                    (default: highestaudio)
-                    Available qualities: highestaudio, highestvideo,
-                    lowestaudio, lowestvideo, highest, lowest.
-    -o  <output>    Set the output directory (default: current directory).
-    `);
+	console.log("Usage : ypdl <url> [-t <number>] [-f <filter>] [-q <quality>] [-o <output>]\n" +
+	"Options : \n" +
+	"\t --help, -h \tShow this help message.\n" +
+	"\t -t <number> \tNumber of threads to use (default: 5).\n" +
+	"\t -f <filter> \tFilter file to download (default: audioandvideo)\n" +
+	"\t\t\tAvailable filters: audioandvideo, video, videoonly,\n" +
+	"\t\t\taudio, audioonly.\n" +
+	"\t -q <quality>\tSet the quality of the downloaded file\n" +
+	"\t\t\t(default: highestaudio)\n" +
+	"\t\t\tAvailable qualities: highestaudio, highestvideo,\n" +
+	"\t\t\tlowestaudio, lowestvideo, highest, lowest.\n" +
+	"\t -o <output>\tSet the output directory (default: current directory).");
 	process.exit(1);
 }
 
@@ -31,6 +29,7 @@ const threads = args.indexOf("-t") > 0 ? args[args.indexOf("-t") + 1] : 5;
 const filter = args.indexOf("-f") > 0 ? args[args.indexOf("-f") + 1] : "audioandvideo";
 const quality = args.indexOf("-q") > 0 ? args[args.indexOf("-q") + 1] : "highestaudio";
 let output = args.indexOf("-o") > 0 ? args[args.indexOf("-o") + 1] : "./";
+ let fullPath = path.resolve(output);
 
 const urlRegex = /^(https?:\/\/)?(www\.)?(music\.)?youtube\.com\/playlist\?list=([a-zA-Z0-9_-]+)/;
 if (!url.startsWith("http") || !urlRegex.test(url)) {
@@ -38,11 +37,6 @@ if (!url.startsWith("http") || !urlRegex.test(url)) {
 	process.exit(1);
 }
 
-if (!output.endsWith("/")) {
-	output = output + "/";
-}
-
-let fullPath = path.resolve(output);
 
 if (!fs.existsSync(fullPath)) {
 	const rl = readline.createInterface({
@@ -108,7 +102,7 @@ async function main() {
 				const donwloader = ytdl(id, { filter, quality });
 				donwloader.pipe(
 					fs.createWriteStream(
-						`${fullPath}${title}.${filter.includes("video") ? "mp4" : "mp3"}`
+						`${fullPath}/${title}.${filter.includes("video") ? "mp4" : "mp3"}`
 					)
 				);
 

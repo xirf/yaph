@@ -1,13 +1,12 @@
 {
-  "name": "ypdl",
+  "name": "yaph",
   "version": "1.0.0",
   "description": "Dowload youtube playlist made easy",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "keywords": [],
+  "keywords": ["yt-downloader", "playlist", "youtube", "playlist-downloader"],
   "author": "itzanka",
   "license": "MIT",
   "dependencies": {
