@@ -3,6 +3,8 @@ const { ProgressBar } = require("ascii-progress");
 const fs = require("fs");
 const ytdl = require("ytdl-core");
 const ytpl = require("ytpl");
+const path = require("path");
+const readline = require("readline");
 
 let args = process.argv.slice(2);
 
@@ -24,7 +26,6 @@ Options :
 	process.exit(1);
 }
 
-// parse arguments
 const url = args[0];
 const threads = args.indexOf("-t") > 0 ? args[args.indexOf("-t") + 1] : 5;
 const filter = args.indexOf("-f") > 0 ? args[args.indexOf("-f") + 1] : "audioandvideo";
@@ -37,17 +38,41 @@ if (!url.startsWith("http") || !urlRegex.test(url)) {
 	process.exit(1);
 }
 
-if (!fs.existsSync(output)) {
-	fs.realpath(output, (err, _) => {
-		console.log(
-			"Output directory does not exist:\33[31m " + err.path + "\33[0m please try again."
-		);
-		process.exit(1);
-	});
-}
-
 if (!output.endsWith("/")) {
 	output = output + "/";
+}
+
+let fullPath = path.resolve(output);
+
+if (!fs.existsSync(fullPath)) {
+	const rl = readline.createInterface({
+		input: process.stdin,
+		output: process.stdout,
+	});
+
+	rl.question(
+		`The directory ${fullPath} does not exist. Do you want to create it? (y/n) `,
+		(answer) => {
+			if (answer === "y") {
+				fs.mkdir(fullPath, { recursive: true }, (err) => {
+					if (err) {
+						console.log(
+							`An error occured while creating the directory ${fullPath}: ${err}`
+						);
+					} else {
+						console.log(`Directory ${fullPath} has been created.`);
+						main();
+					}
+					rl.close();
+				});
+			} else {
+				console.log("Exiting...");
+				rl.close();
+			}
+		}
+	);
+} else {
+	main();
 }
 
 async function getPlaylist(url) {
@@ -60,60 +85,70 @@ async function getPlaylist(url) {
 async function main() {
 	let { items } = await getPlaylist(url);
 
-	const downloadQueue = async.queue(({ id, name, bar }, callback) => {
-		new Promise((resolve, reject) => {
-			const donwloader = ytdl(id, { filter, quality });
+	async.mapLimit(
+		items,
+		threads,
+		(item, callback) => {
+			const bar = new ProgressBar({
+				schema: ":title [:bar] :percent/:size :elapseds/:etas",
+				completed: "█",
+				blank: " ",
+				total: 100,
+				width: 1024,
+			});
 
-			donwloader.pipe(
-				fs.createWriteStream(`${output}${name}.${filter.includes("video") ? "mp4" : "mp3"}`)
-			);
+			let { title, id } = item;
+			let size;
 
-			bar.update(0, { title: "Downloading " + name.substring(0, 23), size: "0MB" });
+			title = title.length < 35 ? title + " ".repeat(35 - title.length) : title;
 
-			donwloader.on("response", function (res) {
-				var totalSize = res.headers["content-length"];
-				var dataRead = 0;
-				res.on("data", function (data) {
-					dataRead += data.length;
-					var percent = dataRead / totalSize;
-					bar.update(percent, {
-						title: name.substring(0, 35),
-						size: Math.round(totalSize / 1000000) + "MB",
+			bar.tick(0, { title: "Starting " + title.substring(0, 26), size: "0MB" });
+
+			return new Promise((resolve, reject) => {
+				const donwloader = ytdl(id, { filter, quality });
+				donwloader.pipe(
+					fs.createWriteStream(
+						`${fullPath}${title}.${filter.includes("video") ? "mp4" : "mp3"}`
+					)
+				);
+
+				donwloader.on("response", function (res) {
+					let totalSize = res.headers["content-length"];
+					let dataRead = 0;
+
+					size = Math.round(totalSize / 1000000) + "MB";
+
+					res.on("data", function (data) {
+						dataRead += data.length;
+						let percent = dataRead / totalSize;
+						bar.update(percent, {
+							title: title.substring(0, 35),
+							size,
+						});
 					});
 				});
-			});
 
-			donwloader.on("error", function () {
-				multibar.stop();
-				resolve();
-			});
-		})
-			.catch((err) => {
-				console.log("Error while downloading: " + name);
-				reject(err);
-			})
-			.finally(() => {
-				callback();
-			});
-	}, threads);
+				donwloader.on("end", () => {
+					bar.tick(100, { title: title.substring(0, 35), size });
+					callback(null, title);
+					resolve();
+				});
 
-	downloadQueue.drain(() => {
-		console.log("\n\33[32mDownload complete!\33[0m File saved at: " + output);
-		process.exit(0);
-	});
-
-	items.forEach((url) => {
-		const bar = new ProgressBar({
-			clean: true,
-			schema: ":title [:bar] :percent/:size :elapseds/:etas",
-			completed: "█",
-			blank: " ",
-			// width: 1000,
-			total: 100,
-			// fixedWidth: false
-		});
-		downloadQueue.push({ id: url.id, name: url.title, bar });
-	});
+				donwloader.on("error", (err) => {
+					bar.update(0, { title: "Error downloading " + title.substring(0, 17), size });
+					callback(err);
+					reject(err);
+				});
+			});
+		},
+		(err) => {
+			if (err) {
+				console.log(err);
+				process.exit(1);
+			} else {
+				console.log("\n\33[32mDownload complete!\33[0m " + items.length + " Files saved at: " + output);
+				process.exit(0);
+			}
+		}
+	);
 }
-
-main();

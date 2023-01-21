@@ -1,19 +1,19 @@
 {
-  "name": "pdl",
+  "name": "ypdl",
   "version": "1.0.0",
-  "description": "",
+  "description": "Dowload youtube playlist made easy",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "itzanka",
+  "license": "MIT",
   "dependencies": {
     "ascii-progress": "^2.0.0",
     "async": "^3.2.4",
-    "axios": "^1.2.3",
-    "cli-progress": "^3.11.2",
+    "readline": "^1.3.0",
     "ytdl-core": "^4.11.2",
     "ytpl": "^2.3.0"
   }
