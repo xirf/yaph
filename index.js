@@ -94,6 +94,7 @@ async function main() {
 			let { title, id } = item;
 			let size;
 
+			title = title.replace(/[\\/:*?"<>|]/g, "_");
 			title = title.length < 35 ? title + " ".repeat(35 - title.length) : title;
 
 			bar.tick(0, { title: "Starting " + title.substring(0, 26), size: "0MB" });
