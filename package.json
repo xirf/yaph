@@ -1,19 +1,24 @@
 {
   "name": "yaph",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Dowload youtube playlist made easy",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": ["yt-downloader", "playlist", "youtube", "playlist-downloader"],
+  "keywords": [
+    "yt-downloader",
+    "playlist",
+    "youtube",
+    "playlist-downloader"
+  ],
   "author": "itzanka",
   "license": "MIT",
   "dependencies": {
-    "ascii-progress": "^2.0.0",
     "async": "^3.2.4",
+    "cli-progress": "^3.12.0",
     "readline": "^1.3.0",
-    "ytdl-core": "^4.11.2",
+    "ytdl-core": "^4.11.5",
     "ytpl": "^2.3.0"
   }
 }
